@@ -320,9 +320,11 @@ def ask_analyst(question):
 # --------------------------- Premium app interface ---------------------------
 st.markdown("""
 <style>
-:root { --ink:#172033; --muted:#667085; --line:#e7eaf1; --accent:#6558f5; }
+:root { color-scheme: light; --ink:#172033; --muted:#667085; --line:#e7eaf1; --accent:#6558f5; }
 .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1180px; }
-[data-testid="stAppViewContainer"] { background: linear-gradient(180deg,#f8f9ff 0%,#ffffff 40%); }
+[data-testid="stAppViewContainer"] { background: linear-gradient(180deg,#f8f9ff 0%,#ffffff 40%); color:#172033 !important; }
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"], [data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] p, [data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] li, [data-testid="stAppViewContainer"] label, [data-testid="stAppViewContainer"] h1, [data-testid="stAppViewContainer"] h2, [data-testid="stAppViewContainer"] h3 { color:#172033 !important; }
+[data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"], [data-testid="stAppViewContainer"] .small-note { color:#667085 !important; }
 [data-testid="stSidebar"] { background: #11182b; }
 [data-testid="stSidebar"] * { color: #edf0ff !important; }
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color:#b9c3dc !important; }
@@ -332,9 +334,15 @@ st.markdown("""
 .hero-sub { color:#667085; font-size:15px; margin-top:10px; margin-bottom:22px; }
 .section-label { font-size:12px; font-weight:800; color:#697386; text-transform:uppercase; letter-spacing:.09em; margin:18px 0 10px 0; }
 div[data-testid="stForm"] { background:white; border:1px solid #e6e9f2; border-radius:18px; padding:20px 20px 14px 20px; box-shadow:0 10px 30px #20294d08; }
-.stTextArea textarea { border-radius:12px !important; border-color:#dfe3ef !important; background:#fbfcff !important; font-size:15px !important; }
-.stButton button, .stFormSubmitButton button { border-radius:10px; font-weight:700; min-height:42px; }
-.stFormSubmitButton button { background:linear-gradient(135deg,#7065ff,#5048d8); border:0; }
+.stTextArea textarea, [data-baseweb="textarea"] textarea, [data-baseweb="input"] input { color:#172033 !important; -webkit-text-fill-color:#172033 !important; caret-color:#5048d8 !important; background:#ffffff !important; border-radius:12px !important; border-color:#dfe3ef !important; font-size:15px !important; }
+.stTextArea textarea::placeholder, [data-baseweb="textarea"] textarea::placeholder { color:#7b8497 !important; -webkit-text-fill-color:#7b8497 !important; opacity:1 !important; }
+.stButton button, .stFormSubmitButton button { border-radius:10px; font-weight:700; min-height:42px; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
+.stButton button p, .stFormSubmitButton button p { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
+[data-testid="stForm"] label { color:#344054 !important; }
+.stFormSubmitButton button { background:linear-gradient(135deg,#7065ff,#5048d8) !important; border:0; }
+.stButton button { background:#ffffff !important; border:1px solid #e0e5f0 !important; color:#25304a !important; -webkit-text-fill-color:#25304a !important; box-shadow:0 3px 12px #20294d08; }
+.stButton button p { color:#25304a !important; -webkit-text-fill-color:#25304a !important; }
+.stButton button:hover { border-color:#766cff !important; background:#f6f5ff !important; }
 div[data-testid="stVerticalBlockBorderWrapper"] { border-radius:16px; border-color:#e7eaf2; background:white; }
 .answer-label { color:#6558f5; font-size:12px; text-transform:uppercase; letter-spacing:.1em; font-weight:800; margin-bottom:8px; }
 div[data-testid="stMetric"] { background:#f8f9ff; border:1px solid #e8eaf5; padding:14px 16px; border-radius:13px; }
