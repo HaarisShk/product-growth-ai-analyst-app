@@ -11,6 +11,43 @@ st.set_page_config(
     layout="wide",
 )
 
+import hmac
+
+def check_access():
+    try:
+        expected = str(st.secrets["app"]["password"]).strip()
+    except Exception:
+        st.error(
+            "Password not configured. Add [app] password "
+            "to Streamlit Cloud Secrets."
+        )
+        st.stop()
+
+    if not expected:
+        st.error("The app password is empty. Check Streamlit Secrets.")
+        st.stop()
+
+    if st.session_state.get("authed"):
+        return
+
+    st.title("AI Product Analyst")
+
+    with st.form("access_password_form"):
+        entered = st.text_input("Access password", type="password")
+        submitted = st.form_submit_button("Unlock app")
+
+    if submitted:
+        if hmac.compare_digest(entered.encode(), expected.encode()):
+            st.session_state["authed"] = True
+            st.rerun()
+        else:
+            st.error("Wrong password.")
+
+    st.stop()
+
+
+check_access()
+
 st.title("AI Product Analyst")
 st.caption(
     "Explore product growth, retention, funnel performance, "
