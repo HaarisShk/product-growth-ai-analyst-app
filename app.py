@@ -11,18 +11,10 @@ st.set_page_config(
     layout="wide",
 )
 
-# TEMPORARY: diagnose Secrets configuration without exposing values
 try:
-    st.write("App section found:", "app" in st.secrets)
-
-    if "app" in st.secrets:
-        st.write(
-            "Password key found:",
-            "password" in st.secrets["app"]
-        )
+    st.write("Secrets keys:", list(st.secrets.keys()))
 except Exception as e:
-    st.write("Secrets diagnostic error:", type(e).__name__)
-
+    st.write("Secrets error:", type(e).__name__)
 import hmac
 
 def check_access():
