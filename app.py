@@ -325,46 +325,52 @@ SELECT
     evidence_text,
 
     CASE
-        WHEN evidence_text =
-            'Unsupported analytical area. Evidence was not retrieved.'
-        THEN evidence_text
+    WHEN analytical_area = 'unsupported'
+      OR evidence_text =
+        'Unsupported analytical area. Evidence was not retrieved.'
+    THEN
+        'I can answer questions about retention, feature adoption, category funnel, category economics, experiments, daily metrics, or the product funnel.'
 
-        ELSE ai_query(
-            'system.ai.gpt-oss-120b',
-            CONCAT(
-                'You are an AI Product Analyst. Answer using ONLY the supplied evidence.',
-                '\nRules:',
-                '\n- Never invent, estimate, or alter counts or metrics.',
-                '\n- Copy supplied counts and percentages exactly.',
-                '\n- Do not calculate new counts mentally.',
-                '\n- Do not claim causation from observational data.',
-                '\n- Do not claim LTV, ROI, or acquisition cost unless supplied.',
-                '\n- Payment attempts are not confirmed successful payments.',
-                '\n- Purchase events are not payment attempts.',
-                '\n- State when evidence is insufficient.',
-                '\n- Separate observed facts from interpretation.',
-                '\n- Do not infer recurring weekly patterns from one seven-day window.',
-                '\n- State exact dates and values when comparing changes.',
-                '\n- Do not imply statistical significance without test results.',
-                '\n- Use observational language rather than causal language.',
-                '\n- Feature adoption and retention comparisons are observational unless randomized.',
-                '\n- Do not recommend changes solely from descriptive comparisons.',
-                '\n- Distinguish observed experiment lift from statistical significance.',
-                '\n- Never invent or change a count from the evidence.',
-                '\n- Do not infer individual behavior from aggregate metrics.',
-                '\n- D30 retention is not a customer-level churn prediction.',
-                '\n- Do not predict future churn unless model predictions are supplied.',
-                '\n- Do not invent customer names or answer beyond the evidence.',
-                '\n- Keep the answer concise.',
-                '\n\nQuestion: ',
-                question,
-                '\n\nAnalytical area: ',
-                analytical_area,
-                '\n\nEvidence:\n',
-                evidence_text
-            )
+    WHEN evidence_text IS NULL
+    THEN
+        'The available data does not contain enough evidence to answer this question.'
+
+    ELSE ai_query(
+        'system.ai.gpt-oss-120b',
+        CONCAT(
+            'You are an AI Product Analyst. Answer using ONLY the supplied evidence.',
+            '\nRules:',
+            '\n- Never invent, estimate, or alter counts or metrics.',
+            '\n- Copy supplied counts and percentages exactly.',
+            '\n- Do not calculate new counts mentally.',
+            '\n- Do not claim causation from observational data.',
+            '\n- Do not claim LTV, ROI, or acquisition cost unless supplied.',
+            '\n- Payment attempts are not confirmed successful payments.',
+            '\n- Purchase events are not payment attempts.',
+            '\n- State when evidence is insufficient.',
+            '\n- Separate observed facts from interpretation.',
+            '\n- Do not infer recurring weekly patterns from one seven-day window.',
+            '\n- State exact dates and values when comparing changes.',
+            '\n- Do not imply statistical significance without test results.',
+            '\n- Use observational language rather than causal language.',
+            '\n- Feature adoption and retention comparisons are observational unless randomized.',
+            '\n- Do not recommend changes solely from descriptive comparisons.',
+            '\n- Distinguish observed experiment lift from statistical significance.',
+            '\n- Never invent or change a count from the evidence.',
+            '\n- Do not infer individual behavior from aggregate metrics.',
+            '\n- D30 retention is not a customer-level churn prediction.',
+            '\n- Do not predict future churn unless model predictions are supplied.',
+            '\n- Do not invent customer names or answer beyond the evidence.',
+            '\n- Keep the answer concise.',
+            '\n\nQuestion: ',
+            question,
+            '\n\nAnalytical area: ',
+            analytical_area,
+            '\n\nEvidence:\n',
+            evidence_text
         )
-    END AS ai_answer
+    )
+END AS ai_answer
 
 FROM evidence
 """
