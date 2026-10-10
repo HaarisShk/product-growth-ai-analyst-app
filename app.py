@@ -11,10 +11,6 @@ st.set_page_config(
     layout="wide",
 )
 
-try:
-    st.write("Secrets keys:", list(st.secrets.keys()))
-except Exception as e:
-    st.write("Secrets error:", type(e).__name__)
 import hmac
 
 def check_access():
