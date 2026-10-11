@@ -465,6 +465,34 @@ def is_education_question(question):
     return any(re.search(pattern, text) for pattern in EDUCATION_PATTERNS)
 
 
+def format_math_response(answer):
+    """Normalize common AI math delimiters to Streamlit-renderable Markdown LaTeX."""
+    answer = str(answer or "").strip()
+
+    # Convert \[...\] display delimiters to Streamlit's $$...$$ form.
+    answer = re.sub(
+        r"\\\[(.*?)\\\]",
+        lambda m: "\n\n$$\n" + m.group(1).strip() + "\n$$\n\n",
+        answer,
+        flags=re.S,
+    )
+    answer = re.sub(
+        r"\\\((.*?)\\\)",
+        lambda m: "$" + m.group(1).strip() + "$",
+        answer,
+        flags=re.S,
+    )
+
+    # Convert a numbered formula such as: 1. [ \frac{a}{b} ]
+    # into a standalone display-math block.
+    answer = re.sub(
+        r"(?m)^\s*(\d+)\.\s*\[\s*(.+?)\s*\]\s*$",
+        lambda m: m.group(1) + ".\n\n$$\n" + m.group(2).strip() + "\n$$",
+        answer,
+    )
+    return answer
+
+
 def explain_product_term(question):
     prompt = f"""
 You are the educational mode of an AI Product Analyst.
@@ -486,6 +514,11 @@ Rules:
 - If a metric has multiple valid definitions, explain that briefly.
 - Distinguish correlation from causation.
 - For A/B testing, distinguish observed lift from statistical significance.
+- Format every mathematical formula using valid LaTeX.
+- Put each standalone formula on its own lines, wrapped in $$ delimiters.
+- Use single dollar signs for inline mathematics, such as $p = x/n$.
+- Use underscores for subscripts, for example x_t, never *{t}.
+- Do not wrap displayed formulas in square brackets or output pseudo-LaTeX.
 - Keep the answer clear, useful, and concise, using headings when helpful.
 - If the request is unrelated to product growth or analytics education, say that this mode
   supports product analytics and growth concepts, and do not answer the unrelated request.
@@ -501,8 +534,7 @@ intervals, statistical significance, correlation, causation, segmentation, and e
 {question}
 </question>
 """
-    return call_ai(prompt)
-
+    return format_math_response(call_ai(prompt))
 
 def unverified_numbers(answer, evidence):
     """Heuristic: numbers in the answer that do not appear in the evidence.
