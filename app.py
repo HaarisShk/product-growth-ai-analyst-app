@@ -1,5 +1,6 @@
 
 import re
+import html
 
 import streamlit as st
 from databricks import sql
@@ -399,91 +400,122 @@ def ask_analyst(question):
         return dict(zip(columns, row))
 
 
-# --------------------------- Premium app interface ---------------------------
+# --------------------------- Insight Studio interface ---------------------------
 st.markdown("""
 <style>
-:root { color-scheme: light; --ink:#172033; --muted:#667085; --line:#e7eaf1; --accent:#6558f5; }
-.block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1180px; }
-[data-testid="stAppViewContainer"] { background: linear-gradient(180deg,#f8f9ff 0%,#ffffff 40%); color:#172033 !important; }
-[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"], [data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] p, [data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] li, [data-testid="stAppViewContainer"] label, [data-testid="stAppViewContainer"] h1, [data-testid="stAppViewContainer"] h2, [data-testid="stAppViewContainer"] h3 { color:#172033 !important; }
-[data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"], [data-testid="stAppViewContainer"] .small-note { color:#667085 !important; }
-[data-testid="stSidebar"] { background: #11182b; }
-[data-testid="stSidebar"] * { color: #edf0ff !important; }
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color:#b9c3dc !important; }
-.brand-mark { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:13px; background:linear-gradient(135deg,#8276ff,#4b45d9); color:white; font-size:21px; font-weight:800; margin-right:12px; vertical-align:middle; box-shadow:0 8px 22px #6558f533; }
-.eyebrow { text-transform:uppercase; letter-spacing:.13em; font-size:11px; font-weight:800; color:#6558f5; margin-bottom:8px; }
-.hero-title { font-size:36px; font-weight:800; letter-spacing:-1.2px; line-height:1.12; color:#182139; margin:0; }
-.hero-sub { color:#667085; font-size:15px; margin-top:10px; margin-bottom:22px; }
-.section-label { font-size:12px; font-weight:800; color:#697386; text-transform:uppercase; letter-spacing:.09em; margin:18px 0 10px 0; }
-div[data-testid="stForm"] { background:white; border:1px solid #e6e9f2; border-radius:18px; padding:20px 20px 14px 20px; box-shadow:0 10px 30px #20294d08; }
-.stTextArea textarea, [data-baseweb="textarea"] textarea, [data-baseweb="input"] input { color:#172033 !important; -webkit-text-fill-color:#172033 !important; caret-color:#5048d8 !important; background:#ffffff !important; border-radius:12px !important; border-color:#dfe3ef !important; font-size:15px !important; }
-.stTextArea textarea::placeholder, [data-baseweb="textarea"] textarea::placeholder { color:#7b8497 !important; -webkit-text-fill-color:#7b8497 !important; opacity:1 !important; }
-.stButton button, .stFormSubmitButton button { border-radius:10px; font-weight:700; min-height:42px; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
-.stButton button p, .stFormSubmitButton button p { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
-[data-testid="stForm"] label { color:#344054 !important; }
-.stFormSubmitButton button { background:linear-gradient(135deg,#7065ff,#5048d8) !important; border:0; }
-.stButton button { background:#ffffff !important; border:1px solid #e0e5f0 !important; color:#25304a !important; -webkit-text-fill-color:#25304a !important; box-shadow:0 3px 12px #20294d08; }
-.stButton button p { color:#25304a !important; -webkit-text-fill-color:#25304a !important; }
-.stButton button:hover { border-color:#766cff !important; background:#f6f5ff !important; }
-div[data-testid="stVerticalBlockBorderWrapper"] { border-radius:16px; border-color:#e7eaf2; background:white; }
-.answer-label { color:#6558f5; font-size:12px; text-transform:uppercase; letter-spacing:.1em; font-weight:800; margin-bottom:8px; }
-div[data-testid="stMetric"] { background:#f8f9ff; border:1px solid #e8eaf5; padding:14px 16px; border-radius:13px; }
-[data-testid="stDataFrame"] { border:1px solid #e8eaf2; border-radius:12px; overflow:hidden; }
-hr { border-color:#eaedf4; }
-.small-note { color:#7b8497; font-size:12px; }
+:root { color-scheme: light; }
+.block-container { padding-top: 1.2rem; padding-bottom: 2.5rem; max-width: 1420px; }
+[data-testid="stAppViewContainer"] { background: #f8f4ee !important; color: #332a23 !important; }
+[data-testid="stHeader"] { background: transparent !important; }
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"],
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] li,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3 { color: #332a23 !important; }
+[data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"],
+[data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] p { color: #766b60 !important; }
+[data-testid="stSidebar"] { background: #f0e9df !important; border-right: 1px solid #e2d8ca; }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stSidebar"] label { color: #4b4036 !important; }
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #766b60 !important; }
+.brand-row { display:flex; align-items:center; gap:10px; margin:4px 0 28px 0; font-size:18px; font-weight:700; color:#332a23; }
+.brand-mark { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:11px; background:#b95732; color:#fff !important; font-size:18px; font-weight:800; }
+.eyebrow { text-transform:uppercase; letter-spacing:.13em; font-size:12px; font-weight:800; color:#b95732 !important; margin-bottom:10px; }
+.hero-title { font-family: Georgia, 'Times New Roman', serif; font-size:clamp(30px,3.4vw,44px); font-weight:700; letter-spacing:-1px; line-height:1.1; color:#332a23 !important; margin:0; }
+.hero-sub { color:#766b60 !important; font-size:16px; margin-top:10px; margin-bottom:20px; }
+.section-label { font-size:12px; font-weight:800; color:#8b7c6e !important; text-transform:uppercase; letter-spacing:.09em; margin:14px 0 10px 0; }
+div[data-testid="stForm"] { background:#fffdfa; border:1px solid #e7dccd; border-radius:18px; padding:14px 16px 8px 16px; box-shadow:none; }
+.stTextArea textarea, [data-baseweb="textarea"] textarea, [data-baseweb="input"] input { color:#332a23 !important; -webkit-text-fill-color:#332a23 !important; caret-color:#b95732 !important; background:#fffdfa !important; border-radius:12px !important; border-color:#e7dccd !important; font-size:15px !important; }
+.stTextArea textarea::placeholder, [data-baseweb="textarea"] textarea::placeholder { color:#8b7c6e !important; -webkit-text-fill-color:#8b7c6e !important; opacity:1 !important; }
+.stButton button, .stFormSubmitButton button { border-radius:999px; font-weight:650; min-height:40px; }
+.stFormSubmitButton button { background:#b95732 !important; border:1px solid #b95732 !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
+.stFormSubmitButton button p { color:#fff !important; -webkit-text-fill-color:#fff !important; }
+.stButton button { background:#f1e8dc !important; border:1px solid #f1e8dc !important; color:#382e26 !important; -webkit-text-fill-color:#382e26 !important; box-shadow:none !important; }
+.stButton button p { color:#382e26 !important; -webkit-text-fill-color:#382e26 !important; font-size:13px !important; }
+.stButton button:hover { background:#eadac8 !important; border-color:#d8bda5 !important; }
+[data-testid="stForm"] label { color:#766b60 !important; }
+div[data-testid="stVerticalBlockBorderWrapper"] { border-radius:18px; border-color:#e7dccd; background:#fffdfa; }
+.answer-label { color:#b95732 !important; font-size:12px; text-transform:uppercase; letter-spacing:.1em; font-weight:800; margin-bottom:8px; }
+.answer-card { background:#fffdfa; border:1px solid #e7dccd; border-radius:18px; padding:22px 24px; margin-top:8px; color:#332a23; }
+.answer-text { color:#51463b; font-size:16px; line-height:1.6; }
+.metric-headline { display:flex; align-items:baseline; flex-wrap:wrap; gap:14px; margin:8px 0 12px 0; }
+.metric-value { font-family:Georgia, 'Times New Roman', serif; font-size:42px; line-height:1.05; color:#332a23; }
+.metric-label { color:#766b60; font-size:15px; }
+.bar-row { display:grid; grid-template-columns:85px minmax(80px,1fr) 68px; gap:12px; align-items:center; margin:10px 0; color:#766b60; font-size:14px; }
+.bar-track { height:10px; background:#f0e7dc; border-radius:999px; overflow:hidden; }
+.bar-fill { height:100%; background:#ce7a55; border-radius:999px; }
+.small-note { color:#766b60 !important; font-size:12px; }
+[data-testid="stDataFrame"] { border:1px solid #e7dccd; border-radius:12px; overflow:hidden; }
+hr { border-color:#e7dccd !important; }
+@media (max-width: 700px) { .metric-value { font-size:34px; } .answer-card { padding:18px; } }
 </style>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
-    st.markdown('<div style="padding:8px 0 22px 0"><span class="brand-mark">A</span><span style="font-size:18px;font-weight:800;vertical-align:middle">Insight Studio</span></div>', unsafe_allow_html=True)
-    st.markdown("### Your analyst")
-    st.markdown("Ask questions about the product's growth, conversion, retention, and commercial performance.")
-    st.markdown("---")
-    st.markdown("**Explore a topic**")
-    st.markdown("""
-    <div style="display:grid;gap:10px;margin-top:10px">
-      <div style="padding:10px 12px;border:1px solid #303a55;border-radius:10px">◉ &nbsp; Growth &amp; funnel</div>
-      <div style="padding:10px 12px;border:1px solid #303a55;border-radius:10px">↗ &nbsp; Retention &amp; adoption</div>
-      <div style="padding:10px 12px;border:1px solid #303a55;border-radius:10px">▦ &nbsp; Revenue &amp; margins</div>
-      <div style="padding:10px 12px;border:1px solid #303a55;border-radius:10px">⌁ &nbsp; Experiments</div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("---")
-    st.caption("Answers are grounded in Gold-table evidence. Interpretations are descriptive unless a valid experiment supports stronger conclusions.")
+    st.markdown('<div class="brand-row"><span class="brand-mark">A</span><span>Insight</span></div>', unsafe_allow_html=True)
+    nav_items = ["✣  Ask analyst", "⚑  Funnel", "↗  Retention", "⊙  Revenue", "♧  Experiments"]
+    selected_nav = st.radio("Navigation", nav_items, label_visibility="collapsed", key="selected_nav")
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+    st.caption("Grounded in Gold-table data")
+    st.markdown("<div class='small-note'>Answers use validated evidence. Observational patterns do not establish causation.</div>", unsafe_allow_html=True)
+
+nav_to_questions = {
+    "✣  Ask analyst": [
+        "Which category has the biggest checkout-to-payment drop-off?",
+        "Which acquisition channel has the lowest D30 retention?",
+        "Which category generates the most gross profit?",
+    ],
+    "⚑  Funnel": [
+        "Which category has the biggest checkout-to-payment drop-off?",
+        "What is the overall product funnel conversion rate?",
+        "Which category has the lowest payment-attempt rate?",
+    ],
+    "↗  Retention": [
+        "Which acquisition channel has the lowest D30 retention?",
+        "Is feature adoption associated with higher D30 retention?",
+        "Compare D30 retention across acquisition channels.",
+    ],
+    "⊙  Revenue": [
+        "Which category generates the most gross profit?",
+        "Which category has the highest gross margin?",
+        "Compare category revenue and gross profit.",
+    ],
+    "♧  Experiments": [
+        "Which experiment showed the strongest conversion lift?",
+        "Which experiments have statistically significant results?",
+        "Summarize the experiment results.",
+    ],
+}
 
 st.markdown('<div class="eyebrow">PRODUCT GROWTH INTELLIGENCE</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-title">Your AI Product Analyst</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-sub">Ask a business question. Get a clear finding, supporting evidence, and a sensible next step.</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">What do you want to know?</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-sub">Ask a business question. Get a clear finding and the data behind it.</div>', unsafe_allow_html=True)
 
-suggestions = [
-    "Which category has the biggest checkout-to-payment drop-off?",
-    "Which acquisition channel has the lowest D30 retention?",
-    "Which category generates the most gross profit?",
-    "Which experiment showed the strongest conversion lift?",
-]
-st.markdown('<div class="section-label">Start with a question</div>', unsafe_allow_html=True)
-sc1, sc2 = st.columns(2)
-for i, q in enumerate(suggestions):
-    col = sc1 if i % 2 == 0 else sc2
-    if col.button(q, key=f"suggestion_{i}", use_container_width=True):
-        st.session_state["analyst_question_input"] = q
+suggestions = nav_to_questions[selected_nav]
+cols = st.columns(len(suggestions))
+for i, suggestion in enumerate(suggestions):
+    if cols[i].button(suggestion, key=f"suggestion_{selected_nav}_{i}", use_container_width=True):
+        st.session_state["analyst_question_input"] = suggestion
         st.rerun()
 
 with st.form("analyst_question_form"):
-    question = st.text_area(
-        "Ask your question",
-        key="analyst_question_input",
-        placeholder="For example: Is feature adoption associated with higher D30 retention?",
-        height=100,
-        max_chars=1000,
-        label_visibility="visible",
-    )
-    submitted = st.form_submit_button("✦  Ask AI Analyst", type="primary", use_container_width=True)
+    input_col, button_col = st.columns([8, 1.2], vertical_alignment="center")
+    with input_col:
+        question = st.text_input(
+            "Ask your question",
+            key="analyst_question_input",
+            placeholder="For example: Which category has the biggest checkout-to-payment drop-off?",
+            label_visibility="collapsed",
+            max_chars=1000,
+        )
+    with button_col:
+        submitted = st.form_submit_button("↑  Ask", type="primary", use_container_width=True)
 
 
-def evidence_table(route, evidence_text):
-    import pandas as pd
-
+def parse_evidence_rows(route, evidence_text):
     lines = [line.strip() for line in (evidence_text or "").splitlines() if line.strip()]
     rows = []
     if route == "category_funnel":
@@ -491,43 +523,105 @@ def evidence_table(route, evidence_text):
         for line in lines:
             m = pattern.match(line)
             if m:
-                rows.append({"Category":m.group(1), "Drop-off":float(m.group(2))/100, "Reached payment attempt":float(m.group(3))/100, "Checkout sessions":int(m.group(4).replace(',','')), "Payment-attempt sessions":int(m.group(5).replace(',',''))})
-        if rows:
-            df = pd.DataFrame(rows).sort_values("Drop-off", ascending=False)
-            st.dataframe(df.style.format({"Drop-off":"{:.2%}","Reached payment attempt":"{:.2%}","Checkout sessions":"{:,.0f}","Payment-attempt sessions":"{:,.0f}"}), use_container_width=True, hide_index=True)
-            st.bar_chart(df.set_index("Category")[["Drop-off"]], horizontal=True)
-            return
+                rows.append({"Category": m.group(1), "Drop-off": float(m.group(2)), "Payment attempt rate": float(m.group(3)), "Checkout sessions": int(m.group(4).replace(',', '')), "Payment-attempt sessions": int(m.group(5).replace(',', ''))})
     elif route == "category_economics":
         pattern = re.compile(r"^(.*?): revenue ([\d.]+); gross profit ([\d.]+); gross margin ([\d.]+)%\.")
         for line in lines:
             m = pattern.match(line)
             if m:
-                rows.append({"Category":m.group(1),"Revenue":float(m.group(2)),"Gross profit":float(m.group(3)),"Gross margin":float(m.group(4))/100})
-        if rows:
-            df=pd.DataFrame(rows).sort_values("Gross profit",ascending=False)
-            st.dataframe(df.style.format({"Revenue":"{:,.2f}","Gross profit":"{:,.2f}","Gross margin":"{:.2%}"}),use_container_width=True,hide_index=True)
-            st.bar_chart(df.set_index("Category")[["Gross profit"]], horizontal=True)
-            return
+                rows.append({"Category": m.group(1), "Revenue": float(m.group(2)), "Gross profit": float(m.group(3)), "Gross margin": float(m.group(4))})
     elif route == "retention":
         pattern = re.compile(r"^(.*?):\s*([\d.]+)% D30 retention;\s*([\d,]+) users;\s*([\d,]+) retained\.")
         for line in lines:
-            m=pattern.match(line)
-            if m: rows.append({"Acquisition channel":m.group(1),"D30 retention":float(m.group(2))/100,"Users":int(m.group(3).replace(',','')),"Retained users":int(m.group(4).replace(',',''))})
-        if rows:
-            df=pd.DataFrame(rows).sort_values("D30 retention",ascending=False)
-            st.dataframe(df.style.format({"D30 retention":"{:.2%}","Users":"{:,.0f}","Retained users":"{:,.0f}"}),use_container_width=True,hide_index=True)
-            return
+            m = pattern.match(line)
+            if m:
+                rows.append({"Acquisition channel": m.group(1), "D30 retention": float(m.group(2)), "Users": int(m.group(3).replace(',', '')), "Retained users": int(m.group(4).replace(',', ''))})
     elif route == "feature_retention":
         pattern = re.compile(r"^(.*?):\s*([\d.]+)% D30 retention\.")
         for line in lines:
-            m=pattern.match(line)
-            if m: rows.append({"Group":m.group(1),"D30 retention":float(m.group(2))/100})
-        if rows:
-            df=pd.DataFrame(rows).sort_values("D30 retention",ascending=False)
-            st.dataframe(df.style.format({"D30 retention":"{:.2%}"}),use_container_width=True,hide_index=True)
-            st.bar_chart(df.set_index("Group"),horizontal=True)
-            return
-    st.text(evidence_text)
+            m = pattern.match(line)
+            if m:
+                rows.append({"Group": m.group(1), "D30 retention": float(m.group(2))})
+    return rows
+
+
+def render_comparison(route, evidence_text):
+    rows = parse_evidence_rows(route, evidence_text)
+    if not rows:
+        return False
+    if route == "category_funnel":
+        rows = sorted(rows, key=lambda row: row["Drop-off"], reverse=True)
+        best = rows[0]
+        metric = f"{best['Drop-off']:.2f}%"
+        label = f"{best['Category']}, highest checkout-to-payment drop-off"
+        bar_key = "Drop-off"
+        bar_max = max(row[bar_key] for row in rows) or 1
+        bar_fmt = lambda value: f"{value:.2f}%"
+    elif route == "category_economics":
+        rows = sorted(rows, key=lambda row: row["Gross profit"], reverse=True)
+        best = rows[0]
+        metric = f"{best['Gross profit']:,.0f}"
+        label = f"{best['Category']}, highest gross profit"
+        bar_key = "Gross profit"
+        bar_max = max(row[bar_key] for row in rows) or 1
+        bar_fmt = lambda value: f"{value:,.0f}"
+    elif route == "retention":
+        rows = sorted(rows, key=lambda row: row["D30 retention"], reverse=True)
+        best = rows[0]
+        metric = f"{best['D30 retention']:.2f}%"
+        label = f"{best['Acquisition channel']}, highest D30 retention"
+        bar_key = "D30 retention"
+        bar_max = max(row[bar_key] for row in rows) or 1
+        bar_fmt = lambda value: f"{value:.2f}%"
+    else:
+        rows = sorted(rows, key=lambda row: row["D30 retention"], reverse=True)
+        best = rows[0]
+        metric = f"{best['D30 retention']:.2f}%"
+        label = f"{best['Group']}, D30 retention"
+        bar_key = "D30 retention"
+        bar_max = max(row[bar_key] for row in rows) or 1
+        bar_fmt = lambda value: f"{value:.2f}%"
+
+    st.markdown('<div class="answer-label">KEY FINDING</div>', unsafe_allow_html=True)
+    safe_metric = html.escape(str(metric))
+    safe_label = html.escape(str(label))
+    st.markdown(f"""<div class="answer-card">
+      <div class="metric-headline"><span class="metric-value">{safe_metric}</span><span class="metric-label">{safe_label}</span></div>
+      <div class="answer-text">This is a descriptive comparison. It does not establish what caused the observed difference.</div>
+    </div>""", unsafe_allow_html=True)
+    st.markdown('<div style="height:10px"></div>', unsafe_allow_html=True)
+    for row in rows:
+        name = row.get("Category", row.get("Acquisition channel", row.get("Group", "")))
+        value = row[bar_key]
+        width = max(0, min(100, value / bar_max * 100))
+        safe_name = html.escape(str(name))
+        safe_value = html.escape(str(bar_fmt(value)))
+        st.markdown(f"""<div class="bar-row"><span>{safe_name}</span><div class="bar-track"><div class="bar-fill" style="width:{width:.2f}%"></div></div><span>{safe_value}</span></div>""", unsafe_allow_html=True)
+    return True
+
+
+def show_supporting_data(route, evidence_text):
+    import pandas as pd
+    rows = parse_evidence_rows(route, evidence_text)
+    if rows:
+        df = pd.DataFrame(rows)
+        if route == "category_funnel":
+            df = df.sort_values("Drop-off", ascending=False)
+            df = df.rename(columns={"Drop-off": "Drop-off (%)", "Payment attempt rate": "Payment attempt rate (%)"})
+            st.dataframe(df.style.format({"Drop-off (%)": "{:.2f}", "Payment attempt rate (%)": "{:.2f}", "Checkout sessions": "{:,.0f}", "Payment-attempt sessions": "{:,.0f}"}), use_container_width=True, hide_index=True)
+        elif route == "category_economics":
+            df = df.sort_values("Gross profit", ascending=False)
+            st.dataframe(df.style.format({"Revenue": "{:,.2f}", "Gross profit": "{:,.2f}", "Gross margin": "{:.2f}%"}), use_container_width=True, hide_index=True)
+        elif route == "retention":
+            df = df.sort_values("D30 retention", ascending=False)
+            st.dataframe(df.style.format({"D30 retention": "{:.2f}%", "Users": "{:,.0f}", "Retained users": "{:,.0f}"}), use_container_width=True, hide_index=True)
+        else:
+            df = df.sort_values("D30 retention", ascending=False)
+            st.dataframe(df.style.format({"D30 retention": "{:.2f}%"}), use_container_width=True, hide_index=True)
+    elif evidence_text and evidence_text != "Unsupported analytical area. Evidence was not retrieved.":
+        st.text(evidence_text)
+    st.caption("Supporting data is descriptive. Payment attempts do not confirm successful payments; observational patterns do not establish causation.")
+
 
 if submitted:
     if not question.strip():
@@ -536,13 +630,18 @@ if submitted:
         try:
             with st.spinner("Reviewing the data and preparing your analysis…"):
                 result = ask_analyst(question.strip())
-            st.markdown("---")
+            route = result.get("analytical_area", "")
+            evidence_text = result.get("evidence_text", "") or ""
+            ai_answer = result.get("ai_answer") or "No answer was returned."
             st.markdown('<div class="answer-label">ANALYST RESPONSE</div>', unsafe_allow_html=True)
-            with st.container(border=True):
-                st.markdown(result.get("ai_answer") or "No answer was returned.")
-            with st.expander("Explore supporting data", expanded=False):
-                evidence_table(result.get("analytical_area", ""), result.get("evidence_text", ""))
-                st.caption("Supporting data is descriptive. Payment attempts do not confirm successful payments; observational patterns do not establish causation.")
+            if route in {"category_funnel", "category_economics", "retention", "feature_retention"} and render_comparison(route, evidence_text):
+                with st.expander("Explore supporting data", expanded=False):
+                    show_supporting_data(route, evidence_text)
+            else:
+                with st.container(border=True):
+                    st.markdown(ai_answer)
+                with st.expander("Explore supporting data", expanded=False):
+                    show_supporting_data(route, evidence_text)
         except Exception:
             st.error("I couldn't complete that analysis. Check the app logs for the technical error, along with the Databricks connection, warehouse status, table permissions, and AI function access.")
             st.caption("Do not share access tokens or Secrets values when troubleshooting.")
