@@ -14,8 +14,6 @@ Secrets (.streamlit/secrets.toml or the Streamlit Cloud Secrets box):
     password = "choose-a-long-password"   # required: the app refuses to open without it
 """
 
-import hashlib
-import hmac
 import html
 import logging
 import re
@@ -48,51 +46,8 @@ st.set_page_config(
 MODEL = "system.ai.gpt-oss-120b"
 MAX_QUESTIONS_PER_SESSION = 25
 COOLDOWN_SECONDS = 3
-MAX_PASSWORD_ATTEMPTS = 5
 EVIDENCE_CACHE_SECONDS = 600
 
-
-# ------------------------------ Access gate ---------------------------------
-def check_access():
-    try:
-        expected = str(st.secrets["app"]["password"]).strip()
-    except Exception:
-        st.error("Password not configured. Add [app] password to Streamlit Cloud Secrets.")
-        st.stop()
-
-    if not expected:
-        st.error("The app password is empty. Check Streamlit Secrets.")
-        st.stop()
-
-    if st.session_state.get("authed"):
-        return
-
-    st.title("AI Product Analyst")
-
-    if st.session_state.get("auth_attempts", 0) >= MAX_PASSWORD_ATTEMPTS:
-        st.error("Too many wrong attempts. Close this tab and try again later.")
-        st.stop()
-
-    with st.form("access_password_form"):
-        entered = st.text_input("Access password", type="password")
-        submitted = st.form_submit_button("Unlock app")
-
-    if submitted:
-        # Hash both sides so compare_digest always compares equal-length values.
-        a = hashlib.sha256(entered.strip().encode()).digest()
-        b = hashlib.sha256(expected.encode()).digest()
-        if hmac.compare_digest(a, b):
-            st.session_state["authed"] = True
-            st.rerun()
-        else:
-            st.session_state["auth_attempts"] = st.session_state.get("auth_attempts", 0) + 1
-            time.sleep(1)  # slows down guessing
-            st.error("Wrong password.")
-
-    st.stop()
-
-
-check_access()
 
 # ------------------------------ Configuration -------------------------------
 try:
