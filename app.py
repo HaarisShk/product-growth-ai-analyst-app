@@ -564,6 +564,22 @@ def parse_evidence_rows(route, evidence_text):
             m = pattern.match(line)
             if m:
                 rows.append({"Group": m.group(1), "D30 retention": float(m.group(2))})
+    elif route == "experiments":
+        pattern = re.compile(
+            r"^(.*?): control conversion ([\d.]+)%?; treatment conversion ([\d.]+)%?; "
+            r"lift ([+-]?[\d.]+) percentage points; relative lift ([+-]?[\d.]+)%; status (.*?)\.$"
+        )
+        for line in lines:
+            m = pattern.match(line)
+            if m:
+                rows.append({
+                    "Experiment": m.group(1),
+                    "Control conversion": float(m.group(2)),
+                    "Treatment conversion": float(m.group(3)),
+                    "Lift (pp)": float(m.group(4)),
+                    "Relative lift (%)": float(m.group(5)),
+                    "Status": m.group(6),
+                })
     return rows
 
 
@@ -644,6 +660,43 @@ def render_comparison(route, evidence_text, question):
         st.markdown(f"""<div class="bar-row"><span>{safe_name}</span><div class="bar-track"><div class="bar-fill" style="width:{width:.2f}%"></div></div><span>{safe_value}</span></div>""", unsafe_allow_html=True)
     return True
 
+def render_experiment_finding(evidence_text, question):
+    rows = parse_evidence_rows("experiments", evidence_text)
+    if not rows:
+        return False
+
+    q = (question or "").lower()
+    asks_significance = bool(re.search(r"\b(significant|significance|p[- ]?value|confidence interval)\b", q))
+    rows = sorted(rows, key=lambda row: row["Lift (pp)"], reverse=True)
+
+    st.markdown('<div class="answer-label">KEY FINDING</div>', unsafe_allow_html=True)
+    if asks_significance:
+        headline = "Significance not available in this evidence"
+        detail = "The experiment evidence includes conversion rates and lift, but no p-values or confidence intervals. Statistical significance cannot be determined from these fields alone."
+    else:
+        best = rows[0]
+        headline = f"{best['Lift (pp)']:.2f} pp"
+        detail = f"{best['Experiment']} has the strongest observed conversion lift in the supplied evidence. Positive lift alone does not establish statistical significance."
+
+    st.markdown(
+        f'<div class="answer-card"><div class="metric-headline"><span class="metric-value">{html.escape(headline)}</span></div>'
+        f'<div class="answer-text">{html.escape(detail)}</div></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div style="height:10px"></div>', unsafe_allow_html=True)
+    max_lift = max((row["Lift (pp)"] for row in rows), default=0) or 1
+    for row in rows:
+        width = max(0, min(100, row["Lift (pp)"] / max_lift * 100))
+        st.markdown(
+            f'<div class="bar-row" style="grid-template-columns:180px minmax(80px,1fr) 100px;">'
+            f'<span>{html.escape(row["Experiment"])}</span>'
+            f'<div class="bar-track"><div class="bar-fill" style="width:{width:.2f}%"></div></div>'
+            f'<span>{row["Lift (pp)"]:.2f} pp</span></div>',
+            unsafe_allow_html=True,
+        )
+    return True
+
+
 def show_supporting_data(route, evidence_text):
     import pandas as pd
     rows = parse_evidence_rows(route, evidence_text)
@@ -659,6 +712,9 @@ def show_supporting_data(route, evidence_text):
         elif route == "retention":
             df = df.sort_values("D30 retention", ascending=False)
             st.dataframe(df.style.format({"D30 retention": "{:.2f}%", "Users": "{:,.0f}", "Retained users": "{:,.0f}"}), use_container_width=True, hide_index=True)
+        elif route == "experiments":
+            df = df.sort_values("Lift (pp)", ascending=False)
+            st.dataframe(df.style.format({"Control conversion": "{:.2f}%", "Treatment conversion": "{:.2f}%", "Lift (pp)": "{:.2f}", "Relative lift (%)": "{:.2f}%"}), use_container_width=True, hide_index=True)
         else:
             df = df.sort_values("D30 retention", ascending=False)
             st.dataframe(df.style.format({"D30 retention": "{:.2f}%"}), use_container_width=True, hide_index=True)
@@ -678,7 +734,10 @@ if submitted:
             evidence_text = result.get("evidence_text", "") or ""
             ai_answer = result.get("ai_answer") or "No answer was returned."
             st.markdown('<div class="answer-label">ANALYST RESPONSE</div>', unsafe_allow_html=True)
-            if route in {"category_funnel", "category_economics", "retention", "feature_retention"} and render_comparison(route, evidence_text, question.strip()):
+            if route == "experiments" and render_experiment_finding(evidence_text, question.strip()):
+                with st.expander("Explore supporting data", expanded=False):
+                    show_supporting_data(route, evidence_text)
+            elif route in {"category_funnel", "category_economics", "retention", "feature_retention"} and render_comparison(route, evidence_text, question.strip()):
                 with st.expander("Explore supporting data", expanded=False):
                     show_supporting_data(route, evidence_text)
             else:
