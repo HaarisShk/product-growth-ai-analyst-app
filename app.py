@@ -419,17 +419,28 @@ def generate_answer(question, route, evidence):
 
 # ------------------------------ Product education ---------------------------
 EDUCATION_PATTERNS = (
+    # Direct requests for an explanation or definition.
     r"\bexplain\b",
     r"\bdefine\b",
+    r"\bteach me\b",
+    r"\bhelp me understand\b",
     r"\bwhat does .+ mean\b",
     r"\bmeaning of\b",
     r"\bwhat is\b",
     r"\bwhat are\b",
+    r"\bconcept of\b",
     r"\bdifference between\b",
+    r"\bhow does .+ work\b",
     r"\bhow is .+ calculated\b",
     r"\bhow do you calculate\b",
     r"\bwhy does .+ matter\b",
     r"\bwhy is .+ important\b",
+    # Common shorthand queries that do not use a full question sentence.
+    r"\bformula\b",
+    r"\bcalculat(?:e|ion)\b",
+    r"\bdefinition\b",
+    r"\b[a-z0-9]+\s+(?:vs\.?|versus)\s+[a-z0-9]+\b",
+    r"\b(?:cac|ltv|dau|wau|mau|arpu|arppu|ctr|cvr|gmv|retention|activation|conversion|acquisition rate|churn|cohort|funnel|gross margin|gross profit|a/b test|p-value|confidence interval)\s+(?:formula|meaning|definition|explained?)\b",
 )
 
 # These signals indicate that the user wants results from this project's data.
@@ -500,7 +511,7 @@ You are the educational mode of an AI Product Analyst.
 Explain product growth, product analytics, and experimentation concepts to a beginner
 using simple English.
 
-For the user's question:
+For the user's question, including short queries such as "CAC vs LTV" or "acquisition rate formula":
 1. Explain the concept clearly in plain English.
 2. Give a small, realistic numerical example when useful.
 3. Include the formula when the concept has one.
