@@ -420,6 +420,16 @@ st.markdown("""
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
 [data-testid="stSidebar"] label { color: #4b4036 !important; }
+[data-testid="stSidebar"] [data-testid="stRadio"] label {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    padding: 7px 2px !important;
+    min-height: 42px !important;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label p {
+    font-size: 18px !important;
+    line-height: 1.35 !important;
+}
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #766b60 !important; }
 .brand-row { display:flex; align-items:center; gap:10px; margin:4px 0 28px 0; font-size:18px; font-weight:700; color:#332a23; }
 .brand-mark { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:11px; background:#b95732; color:#fff !important; font-size:18px; font-weight:800; }
@@ -428,7 +438,19 @@ st.markdown("""
 .hero-sub { color:#766b60 !important; font-size:16px; margin-top:10px; margin-bottom:20px; }
 .section-label { font-size:12px; font-weight:800; color:#8b7c6e !important; text-transform:uppercase; letter-spacing:.09em; margin:14px 0 10px 0; }
 div[data-testid="stForm"] { background:#fffdfa; border:1px solid #e7dccd; border-radius:18px; padding:14px 16px 8px 16px; box-shadow:none; }
-.stTextArea textarea, [data-baseweb="textarea"] textarea, [data-baseweb="input"] input { color:#332a23 !important; -webkit-text-fill-color:#332a23 !important; caret-color:#b95732 !important; background:#fffdfa !important; border-radius:12px !important; border-color:#e7dccd !important; font-size:15px !important; }
+.stTextArea textarea, [data-baseweb="textarea"] textarea,
+[data-testid="stTextInput"] [data-baseweb="input"],
+[data-testid="stTextInput"] [data-baseweb="input"] > div,
+[data-testid="stTextInput"] [data-baseweb="input"] input {
+    color:#332a23 !important;
+    -webkit-text-fill-color:#332a23 !important;
+    caret-color:#b95732 !important;
+    background:#fffdfa !important;
+    border-radius:12px !important;
+    border-color:#e7dccd !important;
+    font-size:15px !important;
+    box-shadow:none !important;
+}
 .stTextArea textarea::placeholder, [data-baseweb="textarea"] textarea::placeholder { color:#8b7c6e !important; -webkit-text-fill-color:#8b7c6e !important; opacity:1 !important; }
 .stButton button, .stFormSubmitButton button { border-radius:999px; font-weight:650; min-height:40px; }
 .stFormSubmitButton button { background:#b95732 !important; border:1px solid #b95732 !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
@@ -545,40 +567,63 @@ def parse_evidence_rows(route, evidence_text):
     return rows
 
 
-def render_comparison(route, evidence_text):
+def render_comparison(route, evidence_text, question):
     rows = parse_evidence_rows(route, evidence_text)
     if not rows:
         return False
+
+    q = (question or "").lower()
+    asks_lowest = bool(re.search(r"\b(lowest|least|minimum|min|smallest|worst|fewest)\b", q))
+    asks_highest = bool(re.search(r"\b(highest|most|maximum|max|largest|biggest|best|greatest)\b", q))
+    descending = not asks_lowest
+    direction_word = "lowest" if asks_lowest else "highest"
+
     if route == "category_funnel":
-        rows = sorted(rows, key=lambda row: row["Drop-off"], reverse=True)
+        if re.search(r"\b(payment[- ]attempt rate|reached payment attempt|payment rate)\b", q):
+            bar_key = "Payment attempt rate"
+            metric_label = "payment-attempt rate"
+        else:
+            bar_key = "Drop-off"
+            metric_label = "checkout-to-payment drop-off"
+        rows = sorted(rows, key=lambda row: row[bar_key], reverse=descending)
         best = rows[0]
-        metric = f"{best['Drop-off']:.2f}%"
-        label = f"{best['Category']}, highest checkout-to-payment drop-off"
-        bar_key = "Drop-off"
+        metric = f"{best[bar_key]:.2f}%"
+        label = f"{best['Category']}, {direction_word} {metric_label}"
         bar_max = max(row[bar_key] for row in rows) or 1
         bar_fmt = lambda value: f"{value:.2f}%"
+
     elif route == "category_economics":
-        rows = sorted(rows, key=lambda row: row["Gross profit"], reverse=True)
+        if re.search(r"\b(margin|gross margin|profit margin)\b", q):
+            bar_key = "Gross margin"
+            metric_label = "gross margin"
+        elif re.search(r"\brevenue\b", q):
+            bar_key = "Revenue"
+            metric_label = "revenue"
+        else:
+            bar_key = "Gross profit"
+            metric_label = "gross profit"
+        rows = sorted(rows, key=lambda row: row[bar_key], reverse=descending)
         best = rows[0]
-        metric = f"{best['Gross profit']:,.0f}"
-        label = f"{best['Category']}, highest gross profit"
-        bar_key = "Gross profit"
+        metric = f"{best[bar_key]:.2f}%" if bar_key == "Gross margin" else f"{best[bar_key]:,.2f}"
+        label = f"{best['Category']}, {direction_word} {metric_label}"
         bar_max = max(row[bar_key] for row in rows) or 1
-        bar_fmt = lambda value: f"{value:,.0f}"
+        bar_fmt = (lambda value: f"{value:.2f}%") if bar_key == "Gross margin" else (lambda value: f"{value:,.2f}")
+
     elif route == "retention":
-        rows = sorted(rows, key=lambda row: row["D30 retention"], reverse=True)
-        best = rows[0]
-        metric = f"{best['D30 retention']:.2f}%"
-        label = f"{best['Acquisition channel']}, highest D30 retention"
         bar_key = "D30 retention"
+        rows = sorted(rows, key=lambda row: row[bar_key], reverse=descending)
+        best = rows[0]
+        metric = f"{best[bar_key]:.2f}%"
+        label = f"{best['Acquisition channel']}, {direction_word} D30 retention"
         bar_max = max(row[bar_key] for row in rows) or 1
         bar_fmt = lambda value: f"{value:.2f}%"
-    else:
-        rows = sorted(rows, key=lambda row: row["D30 retention"], reverse=True)
-        best = rows[0]
-        metric = f"{best['D30 retention']:.2f}%"
-        label = f"{best['Group']}, D30 retention"
+
+    else:  # feature_retention
         bar_key = "D30 retention"
+        rows = sorted(rows, key=lambda row: row[bar_key], reverse=descending)
+        best = rows[0]
+        metric = f"{best[bar_key]:.2f}%"
+        label = f"{best['Group']}, {direction_word} D30 retention"
         bar_max = max(row[bar_key] for row in rows) or 1
         bar_fmt = lambda value: f"{value:.2f}%"
 
@@ -598,7 +643,6 @@ def render_comparison(route, evidence_text):
         safe_value = html.escape(str(bar_fmt(value)))
         st.markdown(f"""<div class="bar-row"><span>{safe_name}</span><div class="bar-track"><div class="bar-fill" style="width:{width:.2f}%"></div></div><span>{safe_value}</span></div>""", unsafe_allow_html=True)
     return True
-
 
 def show_supporting_data(route, evidence_text):
     import pandas as pd
@@ -634,7 +678,7 @@ if submitted:
             evidence_text = result.get("evidence_text", "") or ""
             ai_answer = result.get("ai_answer") or "No answer was returned."
             st.markdown('<div class="answer-label">ANALYST RESPONSE</div>', unsafe_allow_html=True)
-            if route in {"category_funnel", "category_economics", "retention", "feature_retention"} and render_comparison(route, evidence_text):
+            if route in {"category_funnel", "category_economics", "retention", "feature_retention"} and render_comparison(route, evidence_text, question.strip()):
                 with st.expander("Explore supporting data", expanded=False):
                     show_supporting_data(route, evidence_text)
             else:
