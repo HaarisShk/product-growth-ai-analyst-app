@@ -368,7 +368,18 @@ def ai_route(question):
     return match.group(1) if match else None
 
 
+# Reject clearly non-analytical creative requests before keyword scoring.
+# This prevents incidental words such as "revenue" or "retention" inside a joke/story
+# request from triggering a supported analytical route.
+OFF_TOPIC_REQUEST_PATTERNS = (
+    r"\\b(?:tell|make|crack)\\s+(?:me\\s+)?(?:a\\s+)?joke\\b",
+    r"\\b(?:write|tell|make|create)\\s+(?:me\\s+)?(?:a\\s+)?(?:story|poem|song|riddle)\\b",
+)
+
 def classify(question):
+    text = question.lower().strip()
+    if any(re.search(pattern, text) for pattern in OFF_TOPIC_REQUEST_PATTERNS):
+        return None
     return keyword_route(question) or ai_route(question)
 
 
