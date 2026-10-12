@@ -15,7 +15,7 @@ A Streamlit application for asking natural-language questions about product-grow
 
 ## Architecture
 
-Streamlit UI → intent routing → read-only Databricks SQL queries against existing Gold tables → evidence-backed response, with an AI layer for explanations. Numeric claims should be checked against retrieved evidence; the model is not the source of truth for metrics.
+Streamlit UI → intent routing → read-only Databricks SQL queries against existing Gold tables → evidence-backed response, with an AI layer for explanations. 
 
 ## Run locally
 
